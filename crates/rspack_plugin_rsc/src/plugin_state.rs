@@ -32,10 +32,12 @@ pub struct EntryState {
   pub client_modules: FxHashMap<String, ManifestExport>,
   /// Server entry resource -> CSS import paths.
   pub css_imports_per_server_entry: FxHashMap<String, FxIndexSet<String>>,
+  /// Server entry resource -> `import.meta.rspackRsc` importer resources.
+  pub import_meta_rsc_importers: FxHashMap<String, FxIndexSet<String>>,
   /// Dependency path -> action id/name pairs.
   pub client_actions: FxHashMap<String, Vec<ActionIdNamePair>>,
   pub server_actions: ServerReferenceManifest,
-  /// Server entry resource -> CSS chunk file paths.
+  /// Resource key -> CSS chunk file paths for server entries and `loadCss()` importers.
   pub entry_css_files: FxHashMap<String, FxIndexSet<String>>,
   pub entry_js_files: FxIndexSet<String>,
   pub changed_server_components: IdentifierSet,

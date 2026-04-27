@@ -97,13 +97,18 @@ fn record_module(
   }
 
   if is_css_mod(module.as_ref()) {
-    let mut matched_server_entries = Vec::new();
+    let mut entry_css_file_keys = FxIndexSet::default();
     for (server_entry, imports) in &entry_state.css_imports_per_server_entry {
       if imports.contains(resource.as_ref()) {
-        matched_server_entries.push(server_entry.clone());
+        entry_css_file_keys.insert(server_entry.clone());
+        if let Some(import_meta_rsc_entries) =
+          entry_state.import_meta_rsc_importers.get(server_entry)
+        {
+          entry_css_file_keys.extend(import_meta_rsc_entries.iter().cloned());
+        }
       }
     }
-    if matched_server_entries.is_empty() {
+    if entry_css_file_keys.is_empty() {
       return;
     }
 
@@ -126,10 +131,10 @@ fn record_module(
       return;
     }
 
-    for server_entry in matched_server_entries {
+    for entry_css_key in entry_css_file_keys {
       entry_state
         .entry_css_files
-        .entry(server_entry.clone())
+        .entry(entry_css_key)
         .or_default()
         .extend(css_files.clone());
     }

@@ -24,12 +24,16 @@ pub type ClientComponentImports = FxHashMap<String, FxIndexSet<Atom>>;
 // { [server entry path]: [css imports] }
 // Used only to map emitted CSS files back to server entries in the manifest.
 pub type CssImportsPerServerEntry = FxHashMap<String, FxIndexSet<String>>;
+// { [server entry path]: [`import.meta.rspackRsc` importer paths] }
+// Used only to let `loadCss()` importers inherit their nearest server entry CSS files.
+pub type ImportMetaRscImporters = FxHashMap<String, FxIndexSet<String>>;
 
 #[derive(Debug, Default)]
 pub struct ComponentInfo {
   pub should_inject_ssr_modules: bool,
   pub client_component_imports: ClientComponentImports,
   pub css_imports_per_server_entry: CssImportsPerServerEntry,
+  pub import_meta_rsc_importers: ImportMetaRscImporters,
   pub action_imports: Vec<(String, Vec<ActionIdNamePair>)>,
 }
 
@@ -52,7 +56,7 @@ pub fn collect_component_info_from_entry_dependency(
   let mut visited_of_client_components_traverse: IdentifierSet = IdentifierSet::default();
 
   // Info to collect.
-  let mut server_entries: Vec<String> = Default::default();
+  let mut server_entries: FxIndexSet<String> = Default::default();
 
   // Traverse the module graph to find all client components.
 
@@ -75,16 +79,24 @@ fn traverse_with_server_entry_context(
   runtime: &RuntimeSpec,
   imported_identifiers: &[Atom],
   visited: &mut IdentifierSet,
-  server_entries: &mut Vec<String>,
+  server_entries: &mut FxIndexSet<String>,
   component_info: &mut ComponentInfo,
 ) {
-  let is_server_entry = {
-    get_module_rsc_information(module)
-      .is_some_and(|rsc| rsc.module_type == RscModuleType::ServerEntry)
-  };
-  if is_server_entry {
-    server_entries.push(get_module_resource(module).to_string());
+  let resource = get_module_resource(module);
+  let rsc = get_module_rsc_information(module);
+  let is_server_entry = rsc.is_some_and(|rsc| rsc.module_type == RscModuleType::ServerEntry);
+  let inserted_server_entry = is_server_entry && server_entries.insert(resource.to_string());
+
+  if !resource.is_empty() && rsc.is_some_and(|rsc| rsc.import_meta_rsc) {
+    if let Some(server_entry) = server_entries.iter().last() {
+      component_info
+        .import_meta_rsc_importers
+        .entry(server_entry.clone())
+        .or_default()
+        .insert(resource.to_string());
+    }
   }
+
   filter_client_components(
     compilation,
     module,
@@ -94,8 +106,9 @@ fn traverse_with_server_entry_context(
     server_entries,
     component_info,
   );
-  if is_server_entry {
-    server_entries.pop();
+
+  if inserted_server_entry {
+    server_entries.shift_remove(resource.as_ref());
   }
 }
 
@@ -106,7 +119,7 @@ fn filter_client_components(
   runtime: &RuntimeSpec,
   imported_identifiers: &[Atom],
   visited: &mut IdentifierSet,
-  server_entries: &mut Vec<String>,
+  server_entries: &mut FxIndexSet<String>,
   component_info: &mut ComponentInfo,
 ) {
   let resource = get_module_resource(module);

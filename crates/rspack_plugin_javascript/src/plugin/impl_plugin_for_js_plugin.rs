@@ -31,10 +31,10 @@ use crate::{
     ImportMetaContextDependencyTemplate, ImportMetaHotAcceptDependencyTemplate,
     ImportMetaHotDeclineDependencyTemplate, ImportMetaResolveContextDependencyTemplate,
     ImportMetaResolveDependencyTemplate, ImportMetaResolveHeaderDependencyTemplate,
-    IsIncludedDependencyTemplate, ModuleArgumentDependencyTemplate,
-    ModuleDecoratorDependencyTemplate, ModuleHotAcceptDependencyTemplate,
-    ModuleHotDeclineDependencyTemplate, ProvideDependencyTemplate,
-    PureExpressionDependencyTemplate, RequireContextDependencyTemplate,
+    ImportMetaRscDependencyTemplate, IsIncludedDependencyTemplate,
+    ModuleArgumentDependencyTemplate, ModuleDecoratorDependencyTemplate,
+    ModuleHotAcceptDependencyTemplate, ModuleHotDeclineDependencyTemplate,
+    ProvideDependencyTemplate, PureExpressionDependencyTemplate, RequireContextDependencyTemplate,
     RequireEnsureDependencyTemplate, RequireHeaderDependencyTemplate,
     RequireMainDependencyTemplate, RequireResolveContextDependencyTemplate,
     RequireResolveDependencyTemplate, RequireResolveHeaderDependencyTemplate,
@@ -62,6 +62,10 @@ async fn compilation(
   );
   compilation.set_dependency_factory(
     DependencyType::EsmImportSpecifier,
+    params.normal_module_factory.clone(),
+  );
+  compilation.set_dependency_factory(
+    DependencyType::ImportMetaRsc,
     params.normal_module_factory.clone(),
   );
   compilation.set_dependency_factory(
@@ -231,6 +235,10 @@ async fn compilation(
   compilation.set_dependency_template(
     ProvideDependencyTemplate::template_type(),
     Arc::new(ProvideDependencyTemplate::default()),
+  );
+  compilation.set_dependency_template(
+    ImportMetaRscDependencyTemplate::template_type(),
+    Arc::new(ImportMetaRscDependencyTemplate),
   );
 
   // amd dependency templates

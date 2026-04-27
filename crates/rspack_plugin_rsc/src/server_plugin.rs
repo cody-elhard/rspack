@@ -19,7 +19,8 @@ use rustc_hash::{FxHashMap, FxHashSet};
 
 use crate::{
   component_info::{
-    ClientComponentImports, CssImportsPerServerEntry, collect_component_info_from_entry_dependency,
+    ClientComponentImports, CssImportsPerServerEntry, ImportMetaRscImporters,
+    collect_component_info_from_entry_dependency,
   },
   constants::{CSS_REGEX, LAYERS_NAMES},
   coordinator::Coordinator,
@@ -40,6 +41,7 @@ struct ClientEntry {
   runtime: RuntimeSpec,
   client_imports: ClientComponentImports,
   css_imports_per_server_entry: CssImportsPerServerEntry,
+  import_meta_rsc_importers: ImportMetaRscImporters,
 }
 
 #[derive(Debug)]
@@ -256,12 +258,14 @@ impl RscServerPlugin {
       }
       if !component_info.client_component_imports.is_empty()
         || !component_info.css_imports_per_server_entry.is_empty()
+        || !component_info.import_meta_rsc_importers.is_empty()
       {
         client_entries_to_inject.push(ClientEntry {
           entry_name: entry_name.clone(),
           runtime: runtime.clone(),
           client_imports: component_info.client_component_imports,
           css_imports_per_server_entry: component_info.css_imports_per_server_entry,
+          import_meta_rsc_importers: component_info.import_meta_rsc_importers,
         });
       }
 
@@ -456,6 +460,7 @@ impl RscServerPlugin {
       runtime,
       client_imports,
       css_imports_per_server_entry,
+      import_meta_rsc_importers,
     } = client_entry;
 
     let client_entries = {
@@ -464,6 +469,9 @@ impl RscServerPlugin {
       entry_state
         .css_imports_per_server_entry
         .extend(css_imports_per_server_entry);
+      entry_state
+        .import_meta_rsc_importers
+        .extend(import_meta_rsc_importers);
 
       for (request, ids) in &client_imports {
         modules.push(ClientModuleImport {
