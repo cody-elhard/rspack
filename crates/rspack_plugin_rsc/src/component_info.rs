@@ -87,14 +87,15 @@ fn traverse_with_server_entry_context(
   let is_server_entry = rsc.is_some_and(|rsc| rsc.module_type == RscModuleType::ServerEntry);
   let inserted_server_entry = is_server_entry && server_entries.insert(resource.to_string());
 
-  if !resource.is_empty() && rsc.is_some_and(|rsc| rsc.import_meta_rsc) {
-    if let Some(server_entry) = server_entries.iter().last() {
-      component_info
-        .import_meta_rsc_importers
-        .entry(server_entry.clone())
-        .or_default()
-        .insert(resource.to_string());
-    }
+  if !resource.is_empty()
+    && rsc.is_some_and(|rsc| rsc.import_meta_rsc)
+    && let Some(server_entry) = server_entries.iter().last()
+  {
+    component_info
+      .import_meta_rsc_importers
+      .entry(server_entry.clone())
+      .or_default()
+      .insert(resource.to_string());
   }
 
   filter_client_components(
